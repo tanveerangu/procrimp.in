@@ -126,6 +126,7 @@ class HomeController extends Controller
             'email' => 'required|email|max:150',
             'phone' => 'required|string|max:30',
             'company' => 'nullable|string|max:150',
+            'action' => 'nullable|in:view,download',
         ]);
 
         $catalog = ProductCatalog::findOrFail($data['product_catalog_id']);
@@ -140,6 +141,17 @@ class HomeController extends Controller
             'company' => $data['company'] ?? null,
         ]);
 
+        // "Download" button -> straight to the file download
+        if (($data['action'] ?? 'view') === 'download') {
+            return redirect()->to(
+                URL::temporarySignedRoute('front.catalog-download', now()->addMinutes(30), [
+                    'id' => $catalog->id,
+                    'lead' => $lead->id,
+                ])
+            );
+        }
+
+        // "View" button -> secure viewer page
         return redirect()->to(
             URL::temporarySignedRoute('front.catalog-view', now()->addMinutes(30), [
                 'id' => $catalog->id,
@@ -162,12 +174,35 @@ class HomeController extends Controller
         ]);
 
         // Text that is burned into every page as a watermark
+        $downloadUrl = URL::temporarySignedRoute('front.catalog-download', now()->addMinutes(30), [
+            'id' => $catalog->id,
+            'lead' => $leadRow->id,
+        ]);
+
         $watermark = trim($leadRow->name . ' | ' . $leadRow->phone . ' | ' . $leadRow->email);
 
         return response()
-            ->view('front.catalog-view', compact('catalog', 'fileUrl', 'watermark'))
+            ->view('front.catalog-view', compact('catalog', 'fileUrl', 'downloadUrl', 'watermark'))
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('X-Frame-Options', 'SAMEORIGIN');
+    }
+
+    /**
+     * Download (works on phone and laptop). Needs a valid signed link,
+     * which is only given after the form is filled.
+     */
+    public function downloadCatalog($id, $lead)
+    {
+        $catalog = ProductCatalog::findOrFail($id);
+        $path = $catalog->pdfFullPath();
+        abort_unless($path && file_exists($path), 404);
+
+        $name = \Illuminate\Support\Str::slug($catalog->title ?: 'catalog') . '.pdf';
+
+        return response()->download($path, $name, [
+            'Content-Type' => 'application/pdf',
+            'Cache-Control' => 'no-store',
+        ]);
     }
 
     /**

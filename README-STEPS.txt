@@ -15,4 +15,4 @@ SECURE VIEW-ONLY CATALOG - STEPS
 5. Test:
    - /catalog -> "View Catalog" -> form -> viewer opens, no download button.
    - https://procrimp.in/product_catalogs/<old file name>.pdf  -> must give 404.
-   - /product-catelogs/download/1 -> must give 404.
+   - Download button -> form -> PDF saves to phone/laptop; "Download PDF" button inside the viewer works too.

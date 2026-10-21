@@ -34,13 +34,22 @@
                                     <img src="{{ asset($item->image) }}" alt="{{ $item->title }}" />
                                 </a>
                             </div>
-                            <div class="text-box text-center border pb-4 p-0">
-                                <a href="javascript:void(0);" 
-                                   data-id="{{ $item->id }}" 
+                            <div class="text-box text-center border pb-4 p-0 d-flex justify-content-center gap-2 flex-wrap">
+                                <a href="javascript:void(0);"
+                                   data-id="{{ $item->id }}"
+                                   data-action="view"
                                    data-bs-toggle="modal"
                                    data-bs-target="#exampleModal"
                                    class="btn-1 btn-3 link open-modal">
-                                    <span>View Catalog</span>
+                                    <span>View</span>
+                                </a>
+                                <a href="javascript:void(0);"
+                                   data-id="{{ $item->id }}"
+                                   data-action="download"
+                                   data-bs-toggle="modal"
+                                   data-bs-target="#exampleModal"
+                                   class="btn-1 btn-3 link open-modal">
+                                    <span>Download</span>
                                 </a>
                             </div>
                         </div>
@@ -63,6 +72,7 @@
 
                         {{-- FIXED: Removed loop variable and will set via JS --}}
                         <input type="hidden" name="product_catalog_id" id="productCatalogId">
+                        <input type="hidden" name="action" id="catalogAction" value="view">
 
                         <div class="modal-header">
                             <h1 class="modal-title fs-5" id="exampleModalLabel">Catalog Form</h1>
@@ -105,8 +115,9 @@
         document.addEventListener("DOMContentLoaded", function () {
             const modal = document.getElementById('exampleModal');
             modal.addEventListener('show.bs.modal', function (event) {
-                document.getElementById('productCatalogId').value =
-                    event.relatedTarget.getAttribute('data-id');
+                const btn = event.relatedTarget;
+                document.getElementById('productCatalogId').value = btn.getAttribute('data-id');
+                document.getElementById('catalogAction').value = btn.getAttribute('data-action') || 'view';
             });
         });
     </script>

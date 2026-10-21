@@ -28,7 +28,10 @@
     <section class="secure-viewer-wrap">
         <div class="secure-viewer-bar">
             <h4>{{ $catalog->title }}</h4>
-            <a href="{{ route('front.catalog') }}" class="btn-1 btn-3"><span>Back to Catalog</span></a>
+            <div class="d-flex gap-2">
+                <a href="{{ $downloadUrl }}" class="btn-1 btn-3"><span>Download PDF</span></a>
+                <a href="{{ route('front.catalog') }}" class="btn-1 btn-3"><span>Back to Catalog</span></a>
+            </div>
         </div>
         <div id="pdfStatus">Loading catalog…</div>
         <div id="pdfPages"></div>
