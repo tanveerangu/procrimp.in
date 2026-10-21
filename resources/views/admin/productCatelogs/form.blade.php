@@ -11,7 +11,7 @@
     <div class="col-md-6 mb-3">
         <x-larastrap::file name="pdf" label="Pdf" />
         @if ($productCatelog->pdf)
-            <iframe src="{{ asset($productCatelog->pdf) }}" width="100%" height="230px" style="border:none"
+            <iframe src="{{ route('admin.productCatelogs.file', $productCatelog->id) }}" width="100%" height="230px" style="border:none"
                 title="{{ $productCatelog->title }}"></iframe>
         @endif
     </div>

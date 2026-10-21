@@ -54,7 +54,8 @@ class ProductCatalogController extends Controller
         // Handle PDF upload
         if ($request->hasFile('pdf')) {
             $fileName = time() . '_' . $request->file('pdf')->getClientOriginalName();
-            $destinationPath = public_path('product_catalogs');
+            // PRIVATE folder (not reachable from the browser)
+            $destinationPath = storage_path('app/private/product_catalogs');
 
             // Ensure the directory exists
             if (!file_exists($destinationPath)) {
@@ -122,8 +123,8 @@ class ProductCatalogController extends Controller
             $fileName = time() . '_' . $request->file('pdf')->getClientOriginalName();
             $pdfPath = 'product_catalogs/' . $fileName;
 
-            // Ensure the directory exists
-            $destinationPath = public_path('product_catalogs');
+            // Ensure the directory exists (PRIVATE folder)
+            $destinationPath = storage_path('app/private/product_catalogs');
             if (!file_exists($destinationPath)) {
                 mkdir($destinationPath, 0755, true);
             }
@@ -132,8 +133,9 @@ class ProductCatalogController extends Controller
             $request->file('pdf')->move($destinationPath, $fileName);
 
             // Delete the old PDF if it exists
-            if ($productCatelog->pdf && file_exists(public_path($productCatelog->pdf))) {
-                unlink(public_path($productCatelog->pdf));
+            $oldPdf = $productCatelog->pdfFullPath();
+            if ($oldPdf && file_exists($oldPdf)) {
+                unlink($oldPdf);
             }
 
             // Update the PDF path in the database
@@ -157,10 +159,27 @@ class ProductCatalogController extends Controller
     public function delete($id)
     {
         $productCatelog = ProductCatalog::findOrFail($id);
-        if (file_exists(public_path($productCatelog->pdf))) {
-            unlink(public_path($productCatelog->pdf));
+        $oldPdf = $productCatelog->pdfFullPath();
+        if ($oldPdf && file_exists($oldPdf)) {
+            unlink($oldPdf);
         }
         $productCatelog->delete();
         return redirect(route('admin.productCatelogs.index'))->with('error', 'ProductCatelog successfully Deleted');
+    }
+
+    /**
+     * Admin-only preview of the private PDF (used in the edit form).
+     */
+    public function file($id)
+    {
+        $productCatelog = ProductCatalog::findOrFail($id);
+        $path = $productCatelog->pdfFullPath();
+        abort_unless($path && file_exists($path), 404);
+
+        return response()->file($path, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline',
+            'Cache-Control' => 'no-store',
+        ]);
     }
 }

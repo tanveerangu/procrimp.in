@@ -123,6 +123,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/edit/{id}', [ProductCatalogController::class, 'edit'])->name('edit');
         Route::post('/update/{id}', [ProductCatalogController::class, 'update'])->name('update');
         Route::get('/delete/{id}', [ProductCatalogController::class, 'delete'])->name('delete');
+        Route::get('/file/{id}', [ProductCatalogController::class, 'file'])->name('file');
     });
 });
 
@@ -141,8 +142,10 @@ Route::get('/quality', [HomeController::class, 'quality'])->name('front.quality'
 Route::get('/news', [HomeController::class, 'news'])->name('front.news');
 Route::get('/blog-details/{id}', [HomeController::class, 'blogDetails'])->name('front.blog-details');
 Route::get('/catalog', [HomeController::class, 'catalog'])->name('front.catalog');
-Route::get('product-catelogs/download/{id}', [HomeController::class, 'downloadPDF'])->name('front.product-catelog-download');
-Route::post('/catalog-submit', [HomeController::class, 'submitCatalogForm'])->name('front.catalog-submit');
+// Public download route REMOVED on purpose (PDFs are view-only now)
+Route::post('/catalog-submit', [HomeController::class, 'submitCatalogForm'])->middleware('throttle:10,1')->name('front.catalog-submit');
+Route::get('/catalog-view/{id}/{lead}', [HomeController::class, 'viewCatalog'])->middleware(['signed', 'throttle:60,1'])->name('front.catalog-view');
+Route::get('/catalog-file/{id}/{lead}', [HomeController::class, 'catalogFile'])->middleware(['signed', 'throttle:60,1'])->name('front.catalog-file');
 Route::get('/contact', [HomeController::class, 'contact'])->name('front.contact');
 
 Route::post('/enquiry', [HomeController::class, 'enquiry'])->name('front.enquiry');

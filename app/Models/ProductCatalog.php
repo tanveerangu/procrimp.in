@@ -14,4 +14,16 @@ class ProductCatalog extends Model
         'pdf',
         'image'
     ];
+
+    /**
+     * PDFs are stored OUTSIDE the public folder, so they can never be
+     * opened by typing a URL. Only the controllers below can read them.
+     */
+    public function pdfFullPath(): ?string
+    {
+        if (!$this->pdf) {
+            return null;
+        }
+        return storage_path('app/private/' . ltrim($this->pdf, '/'));
+    }
 }

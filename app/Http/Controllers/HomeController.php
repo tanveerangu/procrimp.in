@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Banner;
+use Illuminate\Support\Facades\URL;
 use App\Models\Blog;
 use App\Models\CatalogForm;
 use App\Models\Product;
@@ -113,46 +114,88 @@ class HomeController extends Controller
         return view('front.catalog', compact('productCatalogs'));
     }
 
-    public function downloadPDF($id)
-    {
-        $productCatelog = ProductCatalog::findOrFail($id);
-        $pdfPath = public_path($productCatelog->pdf);
-        if (file_exists($pdfPath)) {
-            return response()->download($pdfPath);
-        } else {
-            return redirect()->back()->with('error', 'PDF file not found.');
-        }
-    }
-
+    /**
+     * Step 1: visitor fills the form. We save it and send them to the
+     * secure viewer page (a temporary signed link, valid 30 minutes).
+     */
     public function submitCatalogForm(Request $request)
     {
-        // Validate the request
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required|email',
-            'phone' => 'required',
-            'company' => 'nullable',
+        $data = $request->validate([
+            'product_catalog_id' => 'required|exists:product_catalogs,id',
+            'name' => 'required|string|max:150',
+            'email' => 'required|email|max:150',
+            'phone' => 'required|string|max:30',
+            'company' => 'nullable|string|max:150',
         ]);
 
-        // Save the form data
-        CatalogForm::create($request->all());
-
-        // Get the productCatalogId from the request
-        $productCatalogId = $request->product_catalog_id;
-
-        // Find the product catalog and retrieve the PDF path
-        $productCatalog = ProductCatalog::findOrFail($productCatalogId);
-        $pdfPath = public_path($productCatalog->pdf);
-
-        // Return the PDF file dynamically
-        if (file_exists($pdfPath)) {
-            return response()->file($pdfPath, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="product_catalog_' . $productCatalogId . '.pdf"',
-            ]);
-        } else {
-            return response()->json(['error' => 'PDF file not found.'], 404);
+        $catalog = ProductCatalog::findOrFail($data['product_catalog_id']);
+        if (!$catalog->pdfFullPath() || !file_exists($catalog->pdfFullPath())) {
+            return redirect()->back()->with('error', 'PDF file not found.');
         }
+
+        $lead = CatalogForm::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'company' => $data['company'] ?? null,
+        ]);
+
+        return redirect()->to(
+            URL::temporarySignedRoute('front.catalog-view', now()->addMinutes(30), [
+                'id' => $catalog->id,
+                'lead' => $lead->id,
+            ])
+        );
+    }
+
+    /**
+     * Step 2: view-only page (PDF.js draws the pages on canvas).
+     */
+    public function viewCatalog(Request $request, $id, $lead)
+    {
+        $catalog = ProductCatalog::findOrFail($id);
+        $leadRow = CatalogForm::findOrFail($lead);
+
+        $fileUrl = URL::temporarySignedRoute('front.catalog-file', now()->addMinutes(30), [
+            'id' => $catalog->id,
+            'lead' => $leadRow->id,
+        ]);
+
+        // Text that is burned into every page as a watermark
+        $watermark = trim($leadRow->name . ' | ' . $leadRow->phone . ' | ' . $leadRow->email);
+
+        return response()
+            ->view('front.catalog-view', compact('catalog', 'fileUrl', 'watermark'))
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('X-Frame-Options', 'SAMEORIGIN');
+    }
+
+    /**
+     * Step 3: the PDF bytes. Only works with a valid signed link and only
+     * when requested by the viewer script (not by typing the link in the
+     * address bar, not as a download).
+     */
+    public function catalogFile(Request $request, $id, $lead)
+    {
+        // Browser navigation / download / new tab => Sec-Fetch-Dest is "document" or "iframe"
+        $dest = $request->header('Sec-Fetch-Dest');
+        if (in_array($dest, ['document', 'iframe', 'embed', 'object'], true)) {
+            abort(403);
+        }
+
+        $catalog = ProductCatalog::findOrFail($id);
+        $path = $catalog->pdfFullPath();
+        if (!$path || !file_exists($path)) {
+            abort(404);
+        }
+
+        return response()->file($path, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
 
