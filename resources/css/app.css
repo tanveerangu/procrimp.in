@@ -1,0 +1,73 @@
+@import '@fortawesome/fontawesome-free/css/fontawesome.css';
+@import '@fortawesome/fontawesome-free/css/regular.css';
+@import '@fortawesome/fontawesome-free/css/solid.css';
+@import '@fortawesome/fontawesome-free/css/brands.css';
+
+body {
+    font-family: "Montserrat", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+}
+
+.logo h3 a {
+    text-decoration: none;
+    color: white;
+}
+
+.main {
+    position: relative;
+}
+
+.sidebar ul li a {
+    color:rgb(218, 218, 218);
+    padding:14px;
+    font-size: 16px;
+}
+
+.sidebar ul li a:hover {
+    color:rgb(255, 255, 255);
+}
+
+
+.logo h3 {
+    color: white;
+    text-align: center;
+    padding-top: 10px;
+    font-weight: 600;
+}
+
+.sidebar-btn {
+    width: 50px;
+    color: rgb(30, 30, 30);
+    z-index: 99;
+}
+
+.width-control-btn {
+    padding: 1px 5px 1px 5px;
+    position: absolute;
+    left: -3%;
+    top: -60px;
+    border:1px dashed #ffffff;
+    color: #ffffff;
+}
+.width-control-btn:hover {
+    background-color: rgb(255 255 255);
+    color:rgb(0 0 0);
+}
+
+
+/* Default sidebar width (full width) */
+#sidebar {
+    transition: width 0.3s ease;
+    background-color: rgb(30, 30, 30);
+}
+
+/* Minimized sidebar (10% width) */
+.sidebar-minimized {
+    width: 12% !important;
+}
+
+/* Adjust the main content when the sidebar is minimized */
+.main-content-expanded {
+    width: 88% !important;
+}
